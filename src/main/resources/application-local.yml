@@ -1,0 +1,17 @@
+server:
+  port: 8085
+  shutdown: graceful
+
+spring:
+  application:
+    name: data
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://antock.iptime.org:16992/hubble_tmp
+    username: hubble
+    password: "!1026Antock!"
+  jpa:
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
