@@ -1,9 +1,8 @@
 package com.data.util;
 
-import org.springframework.http.ResponseEntity;
-
 public interface ApiSource {
 
-    ResponseEntity<byte[]> ftcRequestUrl(String requestInfo);
-    String kftcRequestUrl(String requestInfo);
+    String ftcResponse(String city, String district);
+    String kftcResponse(String csv);
+    String addressApiResponse(String address);
 }

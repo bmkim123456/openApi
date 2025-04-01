@@ -39,9 +39,12 @@ public class FtcCsvFileCheckTest {
             }
 
             String address = value[addressIdx];
-            if (value[addressIdx].length() < 3) {
+            String[] splitAddress = address.split(" ");
+            if (value[addressIdx].length() < 3 || splitAddress.length < 4) {
                 address = value[roadAddressIdx];
             }
+            String finalAddress = extractAddress(address);
+            System.out.println(finalAddress);
 
             FtcResultDto result = FtcResultDto
                     .builder()
@@ -54,17 +57,18 @@ public class FtcCsvFileCheckTest {
         }
 
         for (FtcResultDto company : ftcResultDtoList) {
-            System.out.println(company.getMailOrderNumber());
-            System.out.println(company.getCompanyName());
-            System.out.println(company.getCrn());
-            System.out.println(company.getAddress());
+            String[] splitAddress = company.getAddress().split(" ");
+            if (splitAddress.length < 4) {
+                System.out.println(company.getCompanyName());
+                System.out.println(company.getAddress());
+            }
         }
     }
 
     private String getMailOrderSaleData() {
         try {
-            String city = "강원특별자치도";
-            String district = "양구군";
+            String city = "서울특별시";
+            String district = "노원구";
             String url = "통신판매사업자_" + city + "_" + district + ".csv";
 
             String download = "https://www.ftc.go.kr/www/downloadBizComm.do?atchFileUrl=dataopen&atchFileNm=" + url;
@@ -121,5 +125,14 @@ public class FtcCsvFileCheckTest {
             }
         }
         return result;
+    }
+
+    private String extractAddress(String address) {
+        if (address.contains("null")) {
+            return "주소매핑 실패";
+        }
+
+        String[] splitAddress = address.split(" ");
+        return splitAddress[0] + " " + splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3];
     }
 }

@@ -18,11 +18,11 @@ public class FtcDataService {
     private final ApiSource apiSource;
 
     public List<FtcResultDto> ftcDataList(String city, String district) {
-        log.info("csv 파일 DTO 변환");
-
-        String[] splitData = getMailOrderSaleData(city, district).split("\n");
+        log.info("요청 데이터 : 시/도 : {}, 군/구 : {}", city, district);
+        String[] splitData = apiSource.ftcResponse(city, district).split("\n");
         String[] header = splitData[0].split(",");
 
+        log.info("csv 인덱스 생성");
         List<Integer> indexes = indexList(header);
         int mailOrderNumberIdx = indexes.get(0);
         int companyNameIdx = indexes.get(1);
@@ -33,6 +33,7 @@ public class FtcDataService {
 
         List<FtcResultDto> ftcResultDtoList = new ArrayList<>();
 
+        log.info("추출 데이터 DTO 변환");
         for (int i = 1; i < splitData.length; i++) {
             String[] value = splitData[i].split(",");
             if (value.length < 4 || ObjectUtils.isEmpty(value[corpTypeIdx])) {
@@ -43,45 +44,24 @@ public class FtcDataService {
             }
 
             String address = value[addressIdx];
-            if (value[addressIdx].length() < 3) {
+            String[] splitAddress = address.split(" ");
+            if (value[addressIdx].length() < 3 || splitAddress.length < 4) {
                 address = value[roadAddressIdx];
             }
+            String finalAddress = extractAddress(address);
 
             FtcResultDto result = FtcResultDto
                     .builder()
                     .mailOrderNumber(value[mailOrderNumberIdx])
                     .companyName(value[companyNameIdx])
                     .crn(value[crnIdx])
-                    .address(address)
+                    .address(finalAddress)
                     .build();
             ftcResultDtoList.add(result);
         }
 
         log.info("DTO 변환 완료, 지역 법인 기업 수 : {}", ftcResultDtoList.size());
         return ftcResultDtoList;
-    }
-
-    private String getMailOrderSaleData(String city, String district) {
-        try {
-            log.info("요청 데이터 : 시/도 : {}, 군/구 : {}", city, district);
-
-            String requestData = "통신판매사업자_" + city + "_" + district + ".csv";
-
-            byte[] responseBody = apiSource.ftcRequestUrl(requestData).getBody();
-            if (ObjectUtils.isEmpty(responseBody)) {
-                throw new RuntimeException("데이터가 없습니다");
-            }
-
-            if (new String(responseBody).contains("<title>오류")) {
-                log.error("전달할 파일이 없습니다. 시/도, 군/구 입력이 정확한지 확인 해주세요");
-                throw new RuntimeException("지역 이름이 정확하지 않습니다.");
-            }
-
-            log.info("csv 자료 확인");
-            return new String(responseBody, "EUC-KR");
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
-        }
     }
 
     private List<Integer> indexList(String[] header) {
@@ -108,5 +88,14 @@ public class FtcDataService {
             }
         }
         return result;
+    }
+
+    private String extractAddress(String address) {
+        if (address.contains("null")) {
+            return "주소매핑 실패";
+        }
+
+        String[] splitAddress = address.split(" ");
+        return splitAddress[0] + " " + splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3];
     }
 }
