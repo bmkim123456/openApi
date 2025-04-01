@@ -34,7 +34,7 @@ public class FtcCsvFileCheckTest {
             if (value.length < 4 || ObjectUtils.isEmpty(value[corpTypeIdx])) {
                 continue;
             }
-            if (!value[indexes.get(3)].equals("법인")) {
+            if (!value[corpTypeIdx].equals("법인")) {
                 continue;
             }
 

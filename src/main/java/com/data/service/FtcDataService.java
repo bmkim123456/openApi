@@ -5,12 +5,7 @@ import com.data.util.ApiSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +38,7 @@ public class FtcDataService {
             if (value.length < 4 || ObjectUtils.isEmpty(value[corpTypeIdx])) {
                 continue;
             }
-            if (!value[indexes.get(3)].equals("법인")) {
+            if (!value[corpTypeIdx].equals("법인")) {
                 continue;
             }
 
@@ -70,23 +65,9 @@ public class FtcDataService {
         try {
             log.info("요청 데이터 : 시/도 : {}, 군/구 : {}", city, district);
 
-            String url = "통신판매사업자_" + city + "_" + district + ".csv";
-            String download = apiSource.ftcRequestUrl(url);
+            String requestData = "통신판매사업자_" + city + "_" + district + ".csv";
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36");
-
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<byte[]> response = restTemplate.exchange(
-                    download,
-                    HttpMethod.GET,
-                    entity,
-                    byte[].class
-            );
-
-            byte[] responseBody = response.getBody();
+            byte[] responseBody = apiSource.ftcRequestUrl(requestData).getBody();
             if (ObjectUtils.isEmpty(responseBody)) {
                 throw new RuntimeException("데이터가 없습니다");
             }

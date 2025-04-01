@@ -21,7 +21,12 @@ public class FtcController {
     public String request(@RequestParam String city, @RequestParam String district) {
 
         List<FtcResultDto> ftcDataList = ftcDataService.ftcDataList(city, district);
-        
+
+        for (FtcResultDto ftcData : ftcDataList) {
+            System.out.println(ftcData.getMailOrderNumber());
+            System.out.println(ftcData.getCrn());
+        }
+
         return "ok";
     }
 }
