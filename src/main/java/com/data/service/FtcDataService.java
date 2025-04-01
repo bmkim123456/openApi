@@ -1,53 +1,77 @@
-package com.data;
+package com.data.service;
 
+import com.data.dto.FtcResultDto;
+import com.data.util.ApiSource;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class FileDownloadTest {
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class FtcDataService {
 
-    @Test
-    void checkData() {
-        String[] splitData = getMailOrderSaleData().split("\n");
+    private final ApiSource apiSource;
+
+    public List<FtcResultDto> ftcDataList(String city, String district) {
+        log.info("csv 파일 DTO 변환");
+
+        String[] splitData = getMailOrderSaleData(city, district).split("\n");
         String[] header = splitData[0].split(",");
 
         List<Integer> indexes = indexList(header);
-        List<String> companyData = new ArrayList<>();
+        int mailOrderNumberIdx = indexes.get(0);
+        int companyNameIdx = indexes.get(1);
+        int crnIdx = indexes.get(2);
+        int corpTypeIdx = indexes.get(3);
+        int addressIdx = indexes.get(4);
+        int roadAddressIdx = indexes.get(5);
+
+        List<FtcResultDto> ftcResultDtoList = new ArrayList<>();
 
         for (int i = 1; i < splitData.length; i++) {
             String[] value = splitData[i].split(",");
-            if (value[indexes.get(3)].equals("개인")) {
+            if (value.length < 4 || ObjectUtils.isEmpty(value[corpTypeIdx])) {
+                continue;
+            }
+            if (!value[indexes.get(3)].equals("법인")) {
                 continue;
             }
 
-            String crn = value[indexes.get(2)].replace("-", "");
-            companyData.add(value[indexes.get(0)]);
-            companyData.add(value[indexes.get(1)]);
-            companyData.add(crn);
-            companyData.add(value[indexes.get(3)]);
-            companyData.add(value[indexes.get(4)]);
-            companyData.add(value[indexes.get(5)]);
+            String address = value[addressIdx];
+            if (value[addressIdx].length() < 3) {
+                address = value[roadAddressIdx];
+            }
+
+            FtcResultDto result = FtcResultDto
+                    .builder()
+                    .mailOrderNumber(value[mailOrderNumberIdx])
+                    .companyName(value[companyNameIdx])
+                    .crn(value[crnIdx])
+                    .address(address)
+                    .build();
+            ftcResultDtoList.add(result);
         }
 
-        for (String company : companyData) {
-            System.out.println(company);
-        }
+        log.info("DTO 변환 완료, 지역 법인 기업 수 : {}", ftcResultDtoList.size());
+        return ftcResultDtoList;
     }
 
-    private String getMailOrderSaleData() {
+    private String getMailOrderSaleData(String city, String district) {
         try {
-            String city = "서울특별시";
-            String district = "도봉구";
-            String url = "통신판매사업자_" + city + "_" + district + ".csv";
+            log.info("요청 데이터 : 시/도 : {}, 군/구 : {}", city, district);
 
-            String download = "https://www.ftc.go.kr/www/downloadBizComm.do?atchFileUrl=dataopen&atchFileNm=" + url;
+            String url = "통신판매사업자_" + city + "_" + district + ".csv";
+            String download = apiSource.ftcRequestUrl(url);
 
             HttpHeaders headers = new HttpHeaders();
             headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36");
@@ -67,6 +91,12 @@ public class FileDownloadTest {
                 throw new RuntimeException("데이터가 없습니다");
             }
 
+            if (new String(responseBody).contains("<title>오류")) {
+                log.error("전달할 파일이 없습니다. 시/도, 군/구 입력이 정확한지 확인 해주세요");
+                throw new RuntimeException("지역 이름이 정확하지 않습니다.");
+            }
+
+            log.info("csv 자료 확인");
             return new String(responseBody, "EUC-KR");
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
