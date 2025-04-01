@@ -51,6 +51,7 @@ public class ApiSourceImpl implements ApiSource {
 
     @Override
     public String kftcResponse(String crn) {
+        String finalCrn = crn.replace("-", "");
         String serviceKey = "QXHPt0cp%2FBAWoWQcvcwS7KIA%2BU5v6fy1AehdhW%2Fey8X%2B8v%2Bs7a%2FuxH%2FVASDc8AN%2FU%2BKkUxOyNe3KSS4Sxyof4Q%3D%3D";
 
         HttpHeaders headers = new HttpHeaders();
@@ -60,7 +61,7 @@ public class ApiSourceImpl implements ApiSource {
                 + "?serviceKey=" + serviceKey
                 + "&pageNo=1"
                 + "&numOfRows=1"
-                + "&brno=" + crn;
+                + "&brno=" + finalCrn;
 
         try {
             URI apiUrl = new URI(requestUrl);
