@@ -22,6 +22,8 @@ public class DataCompileService {
 
         List<DataCompileDto> resultList = new ArrayList<>();
         for (FtcResultDto csvData : csvDataList) {
+            log.info("사업자 번호로 법인번호 확인");
+
             String kftcResponseBody = apiSource.kftcResponse(csvData.getCrn());
             if (!kftcResponseBody.contains("<crno>")) {
                 log.info("기업명 : {} 법인번호 확인 실패", csvData.getCompanyName());
@@ -29,12 +31,14 @@ public class DataCompileService {
             }
             String enr = extractCrno(kftcResponseBody);
 
+            log.info("주소 정보로 행정동 코드 확인");
             String addressResponseBody = apiSource.addressApiResponse(csvData.getAddress());
             if (csvData.getAddress().contains("주소매핑 실패")) {
                 addressResponseBody = extractAddr(kftcResponseBody);
             }
             String addressCode = extractCode(addressResponseBody);
 
+            log.info("최종 결과 데이터 취합");
             DataCompileDto dataCompileDto = DataCompileDto
                     .builder()
                     .mailOrderNumber(csvData.getMailOrderNumber())

@@ -15,7 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-public class FtcController {
+public class DataController {
 
     private final FtcDataService ftcDataService;
     private final DataCompileService dataCompileService;
@@ -26,9 +26,6 @@ public class FtcController {
         List<FtcResultDto> ftcDataList = ftcDataService.ftcDataList(city, district);
         List<DataCompileDto> compileDtoList = dataCompileService.companyDataList(ftcDataList);
 
-        for (DataCompileDto compileDto : compileDtoList) {
-            System.out.println(compileDto.getCompanyName());
-        }
 
         return "ok";
     }
