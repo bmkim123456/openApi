@@ -29,8 +29,8 @@ public class DataCompileService {
             CountDownLatch enrLatch = new CountDownLatch(1);
             CountDownLatch latch = new CountDownLatch(2);
 
-            AtomicReference<String> enrValue = new AtomicReference<>();
-            AtomicReference<String> addrCodeValue = new AtomicReference<>();
+            AtomicReference<String> enrValue = new AtomicReference<>("");
+            AtomicReference<String> addrCodeValue = new AtomicReference<>("");
 
             Thread enrJob = new Thread(() -> {
                 try {
