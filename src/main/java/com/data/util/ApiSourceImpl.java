@@ -2,6 +2,7 @@ package com.data.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -15,15 +16,26 @@ import java.net.URI;
 @Component
 public class ApiSourceImpl implements ApiSource {
 
-    private final static String FTC_URL = "https://www.ftc.go.kr/www/downloadBizComm.do?atchFileUrl=dataopen&atchFileNm=";
-    private final static String OPENDATA_URL = "https://apis.data.go.kr/1130000/MllBsDtl_2Service/getMllBsInfoDetail_2";
-    private final static String ADDRESS_URL = "https://business.juso.go.kr/addrlink/addrLinkApi.do?";
+    @Value("${ftc.url}")
+    private String ftcUrl;
+
+    @Value("${openApi.url}")
+    private String openApiUrl;
+
+    @Value("${openApi.key}")
+    private String openApiKey;
+
+    @Value("${addressApi.url}")
+    private String addressApiUrl;
+
+    @Value("${addressApi.key}")
+    private String addressApiKey;
 
     @Override
     public String ftcResponse(String city, String district) {
         try {
             String requestInfo = "통신판매사업자_" + city + "_" + district + ".csv";
-            String requestUrl = FTC_URL + requestInfo;
+            String requestUrl = ftcUrl + requestInfo;
 
             HttpHeaders headers = new HttpHeaders();
             headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36");
@@ -52,13 +64,12 @@ public class ApiSourceImpl implements ApiSource {
     @Override
     public String openDataApiResponse(String crn) {
         String finalCrn = crn.replace("-", "");
-        String serviceKey = "QXHPt0cp%2FBAWoWQcvcwS7KIA%2BU5v6fy1AehdhW%2Fey8X%2B8v%2Bs7a%2FuxH%2FVASDc8AN%2FU%2BKkUxOyNe3KSS4Sxyof4Q%3D%3D";
 
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        String requestUrl = OPENDATA_URL
-                + "?serviceKey=" + serviceKey
+        String requestUrl = openApiUrl
+                + "?serviceKey=" + openApiKey
                 + "&pageNo=1"
                 + "&numOfRows=1"
                 + "&brno=" + finalCrn;
@@ -85,8 +96,7 @@ public class ApiSourceImpl implements ApiSource {
 
     @Override
     public String addressApiResponse(String address) {
-        String confmKey = "devU01TX0FVVEgyMDI1MDQwMTA5NTgyNzExNTU5NTc=";
-        String request = ADDRESS_URL + "keyword=" + address + "&confmKey=" + confmKey;
+        String request = addressApiUrl + "keyword=" + address + "&confmKey=" + addressApiKey;
 
         try {
             HttpHeaders headers = new HttpHeaders();

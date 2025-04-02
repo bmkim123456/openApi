@@ -15,3 +15,15 @@ spring:
       hibernate:
         show_sql: false
         format_sql: false
+
+ftc:
+  url: "https://www.ftc.go.kr/www/downloadBizComm.do?atchFileUrl=dataopen&atchFileNm="
+
+openApi:
+  url: "https://apis.data.go.kr/1130000/MllBsDtl_2Service/getMllBsInfoDetail_2"
+  key: "QXHPt0cp%2FBAWoWQcvcwS7KIA%2BU5v6fy1AehdhW%2Fey8X%2B8v%2Bs7a%2FuxH%2FVASDc8AN%2FU%2BKkUxOyNe3KSS4Sxyof4Q%3D%3D"
+
+addressApi:
+  url: "https://business.juso.go.kr/addrlink/addrLinkApi.do?"
+  key: "devU01TX0FVVEgyMDI1MDQwMTA5NTgyNzExNTU5NTc="
+
