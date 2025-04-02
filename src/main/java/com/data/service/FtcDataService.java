@@ -48,7 +48,7 @@ public class FtcDataService {
             if (value[addressIdx].length() < 3 || splitAddress.length < 4) {
                 address = value[roadAddressIdx];
             }
-            String finalAddress = extractAddress(address);
+            String finalAddress = convertAddrss(address);
 
             FtcResultDto result = FtcResultDto
                     .builder()
@@ -90,9 +90,9 @@ public class FtcDataService {
         return result;
     }
 
-    private String extractAddress(String address) {
-        if (address.contains("null")) {
-            return "주소매핑 실패";
+    private String convertAddrss(String address) {
+        if (ObjectUtils.isEmpty(address) || address.contains("null")) {
+            return "admCdN/A";
         }
 
         String[] splitAddress = address.split(" ");

@@ -16,7 +16,7 @@ import java.net.URI;
 public class ApiSourceImpl implements ApiSource {
 
     private final static String FTC_URL = "https://www.ftc.go.kr/www/downloadBizComm.do?atchFileUrl=dataopen&atchFileNm=";
-    private final static String KFTC_URL = "https://apis.data.go.kr/1130000/MllBsDtl_2Service/getMllBsInfoDetail_2";
+    private final static String OPENDATA_URL = "https://apis.data.go.kr/1130000/MllBsDtl_2Service/getMllBsInfoDetail_2";
     private final static String ADDRESS_URL = "https://business.juso.go.kr/addrlink/addrLinkApi.do?";
 
     @Override
@@ -50,14 +50,14 @@ public class ApiSourceImpl implements ApiSource {
     }
 
     @Override
-    public String kftcResponse(String crn) {
+    public String openDataApiResponse(String crn) {
         String finalCrn = crn.replace("-", "");
         String serviceKey = "QXHPt0cp%2FBAWoWQcvcwS7KIA%2BU5v6fy1AehdhW%2Fey8X%2B8v%2Bs7a%2FuxH%2FVASDc8AN%2FU%2BKkUxOyNe3KSS4Sxyof4Q%3D%3D";
 
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        String requestUrl = KFTC_URL
+        String requestUrl = OPENDATA_URL
                 + "?serviceKey=" + serviceKey
                 + "&pageNo=1"
                 + "&numOfRows=1"
@@ -72,7 +72,12 @@ public class ApiSourceImpl implements ApiSource {
                 log.info("enr response is empty");
             }
 
-            return response.getBody();
+            if (response.getBody().contains("<crno>")) {
+                return response.getBody();
+            }
+
+            log.error("사업자 번호 {} 법인번호 찾기 실패, <crno> 항목 없음", crn);
+            return null;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -83,19 +88,24 @@ public class ApiSourceImpl implements ApiSource {
         String confmKey = "devU01TX0FVVEgyMDI1MDQwMTA5NTgyNzExNTU5NTc=";
         String request = ADDRESS_URL + "keyword=" + address + "&confmKey=" + confmKey;
 
-        HttpHeaders headers = new HttpHeaders();
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.postForEntity(request, headers, String.class);
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.postForEntity(request, headers, String.class);
 
-        if (ObjectUtils.isEmpty(response.getBody())) {
-            log.error("주소 결과 없음");
+            if (ObjectUtils.isEmpty(response.getBody())) {
+                log.error("주소 결과 없음");
+                return null;
+            }
+
+            if (response.getBody().contains("<admCd>")) {
+                return response.getBody();
+            }
+
+            log.error("주소 {} 에 대한 행정구역 코드 찾기 실패, <admCd> 항목 없음", address);
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
         }
-
-        if (!response.getBody().contains("<admCd>")) {
-            System.out.println("법정동 코드 없음");
-            return "주소매핑 실패";
-        }
-
-        return response.getBody();
     }
 }

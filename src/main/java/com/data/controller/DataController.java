@@ -26,6 +26,13 @@ public class DataController {
         List<FtcResultDto> ftcDataList = ftcDataService.ftcDataList(city, district);
         List<DataCompileDto> compileDtoList = dataCompileService.companyDataList(ftcDataList);
 
+        for (DataCompileDto compileDto : compileDtoList) {
+            System.out.println(compileDto.getMailOrderNumber());
+            System.out.println(compileDto.getCompanyName());
+            System.out.println(compileDto.getCrn());
+            System.out.println(compileDto.getEnr());
+            System.out.println(compileDto.getDistrictCode());
+        }
 
         return "ok";
     }
