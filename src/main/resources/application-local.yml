@@ -7,7 +7,7 @@ spring:
     name: data
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://antock.iptime.org:16992/hubble_tmp
+    url: jdbc:postgresql://115.68.68.188:5432/hubble_tmp
     username: hubble
     password: "!1026Antock!"
   jpa:

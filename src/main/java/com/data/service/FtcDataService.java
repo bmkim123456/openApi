@@ -43,6 +43,18 @@ public class FtcDataService {
                 continue;
             }
 
+            if (value.length < addressIdx || ObjectUtils.isEmpty(value[addressIdx])) {
+                FtcResultDto result = FtcResultDto
+                        .builder()
+                        .mailOrderNumber(value[mailOrderNumberIdx])
+                        .companyName(value[companyNameIdx])
+                        .crn(value[crnIdx])
+                        .address("admCdN/A")
+                        .build();
+                ftcResultDtoList.add(result);
+                continue;
+            }
+
             String address = value[addressIdx];
             String[] splitAddress = address.split(" ");
             if (value[addressIdx].length() < 3 || splitAddress.length < 4) {

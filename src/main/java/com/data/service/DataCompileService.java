@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @RequiredArgsConstructor
@@ -23,56 +25,74 @@ public class DataCompileService {
         List<DataCompileDto> resultList = new ArrayList<>();
         log.info("enr 및 주소코드 병합");
         for (FtcResultDto ftcData : ftcDataList) {
-            String[] enrValue = new String[1];
-            String[] addrCodeValue = new String[1];
 
-            String kftcResponseBody = apiSource.openDataApiResponse(ftcData.getCrn());
-            if (ObjectUtils.isEmpty(kftcResponseBody)) {
-                continue;
-            }
-            if (ftcData.getAddress().contains("admCdN/A")) {
-                if (extractAddr(kftcResponseBody).contains("N/A")) {
-                    log.info("기업명 : {} 행정동코드 확인 실패, <admCd> 값 N/A", ftcData.getCompanyName());
-                    continue;
-                }
-                String address = extractAddr(kftcResponseBody);
-                ftcData.setAddress(convertAddrss(address));
-            }
+            CountDownLatch enrLatch = new CountDownLatch(1);
+            CountDownLatch latch = new CountDownLatch(2);
 
-            try {
-                Thread enrJob = new Thread(() -> {
-                    if (extractCrno(kftcResponseBody).contains("N/A")) {
-                        log.info("기업명 : {} 법인번호 확인 실패, <crno> 값 N/A", ftcData.getCompanyName());
-                        enrValue[0] = "Fail";
+            AtomicReference<String> enrValue = new AtomicReference<>();
+            AtomicReference<String> addrCodeValue = new AtomicReference<>();
+
+            Thread enrJob = new Thread(() -> {
+                try {
+                    String kftcResponseBody = apiSource.openDataApiResponse(ftcData.getCrn());
+                    if (ObjectUtils.isEmpty(kftcResponseBody)) {
                         return;
                     }
-                    enrValue[0] = extractCrno(kftcResponseBody);
-                });
+                    // csv 파일에서 주소가 없는 경우 공공데이터 api를 통해 주소 값을 얻을 수도 있으므로 필요한 경우 공공데이터 주소값도 확인
+                    if (ftcData.getAddress().contains("admCdN/A")) {
+                        if (extractAddr(kftcResponseBody).contains("N/A")) {
+                            log.info("기업명 : {} 행정동코드 확인 실패, <admCd> 값 N/A", ftcData.getCompanyName());
+                            return;
+                        }
+                        String address = extractAddr(kftcResponseBody);
+                        ftcData.setAddress(convertAddrss(address));
+                    }
 
-                Thread addrJob = new Thread(() -> {
+                    if (extractCrno(kftcResponseBody).contains("N/A")) {
+                        log.info("기업명 : {} 법인번호 확인 실패, <crno> 값 N/A", ftcData.getCompanyName());
+                        return;
+                    }
+                    enrValue.set(extractCrno(kftcResponseBody));
+                } catch (Exception e) {
+                    log.error("enr 작업 중 오류발생");
+                    throw new RuntimeException(e.getMessage());
+                } finally {
+                    enrLatch.countDown();
+                    latch.countDown();
+                }
+            });
+
+            Thread addrJob = new Thread(() -> {
+                try {
+                    if (ftcData.getAddress().contains("admCdN/A")) {
+                        enrLatch.await();
+                    }
                     String addressResponseBody = apiSource.addressApiResponse(ftcData.getAddress());
                     if (ObjectUtils.isEmpty(addressResponseBody)) {
-                        addrCodeValue[0] = "Fail";
                         return;
                     }
                     if (extractAddrCode(addressResponseBody).contains("N/A")) {
-                        log.error("기업명 {} 의 주소 확인 실패, <lctnAddr> 값 N/A", ftcData.getCompanyName());
-                        addrCodeValue[0] = "Fail";
                         return;
                     }
-                    addrCodeValue[0] = extractAddr(addressResponseBody);
-                });
+                    addrCodeValue.set(extractAddrCode(addressResponseBody));
+                } catch (Exception e) {
+                    log.error("addrCode 작업 중 오류발생");
+                    throw new RuntimeException(e.getMessage());
+                } finally {
+                    latch.countDown();
+                }
+            });
 
-                enrJob.start();
-                addrJob.start();
+            enrJob.start();
+            addrJob.start();
 
-                enrJob.join();
-                addrJob.join();
+            try {
+                latch.await();
 
-                String enr = enrValue[0];
-                String addrCode = addrCodeValue[0];
+                String enr = enrValue.toString();
+                String addrCode = addrCodeValue.toString();
 
-                if (enr.contains("FAIL") || addrCode.contains("FAIL")) {
+                if (ObjectUtils.isEmpty(enr) || ObjectUtils.isEmpty(addrCode)) {
                     continue;
                 }
 
@@ -89,6 +109,7 @@ public class DataCompileService {
                 throw new RuntimeException(e.getMessage());
             }
         }
+        log.info("enr 및 주소코드 병합 완료");
         return resultList;
     }
 
@@ -126,10 +147,6 @@ public class DataCompileService {
     }
 
     private String convertAddrss(String address) {
-        if (ObjectUtils.isEmpty(address) || address.contains("null")) {
-            return "admCdN/A";
-        }
-
         String[] splitAddress = address.split(" ");
         return splitAddress[0] + " " + splitAddress[1] + " " + splitAddress[2] + " " + splitAddress[3];
     }
