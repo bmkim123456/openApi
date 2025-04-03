@@ -6,7 +6,12 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class DataCompileTest {
 
@@ -58,6 +63,75 @@ public class DataCompileTest {
         }
         System.out.println("기업 수 : " + resultList.size());
 
+    }
+
+    @Test
+    void nonBlockTest() {
+        System.out.println("::: 시작, 시간 = " + LocalDateTime.now());
+        List<FtcResultDto> ftcDataList = ftcDataList();
+        Map<String, DataCompileDto> dataMap = new HashMap<>();
+
+        ExecutorService extractJob = Executors.newFixedThreadPool(4);
+
+        List<Future<Map<String, String>>> enrList = new ArrayList<>();
+        List<Future<Map<String, String>>> addrCodeList = new ArrayList<>();
+
+        for (FtcResultDto ftcData : ftcDataList) {
+            String key = ftcData.getMailOrderNumber();
+
+            DataCompileDto dto = DataCompileDto
+                    .builder()
+                    .mailOrderNumber(ftcData.getMailOrderNumber())
+                    .companyName(ftcData.getCompanyName())
+                    .crn(ftcData.getCrn())
+                    .build();
+
+            dataMap.put(key, dto);
+
+            Future<Map<String, String>> enrMap = extractJob.submit(() -> {
+                Map<String, String> result = new HashMap<>();
+                String enr = extractEnr(ftcData.getCompanyName());
+                result.put(key, enr);
+                Thread.sleep(500);
+                return result;
+            });
+
+
+            Future<Map<String, String>> addrMap = extractJob.submit(() -> {
+                if (ftcData.getCompanyName().equals("앤톡4")) {
+                    enrMap.get();
+                }
+                Map<String, String> result = new HashMap<>();
+                String addrCoed = extractAddr(ftcData.getAddress());
+                result.put(key, addrCoed);
+                Thread.sleep(300);
+                return result;
+            });
+
+            enrList.add(enrMap);
+            addrCodeList.add(addrMap);
+        }
+
+        try {
+            for (Future<Map<String, String>> enrMap : enrList) {
+                Map<String, String> result = enrMap.get();
+                result.forEach((key, value) -> dataMap.get(key).setEnr(value));
+            }
+
+            for (Future<Map<String, String>> future : addrCodeList) {
+                Map<String, String> result = future.get();
+                result.forEach((key, value) -> dataMap.get(key).setDistrictCode(value));
+            }
+
+
+        } catch (Exception e) {
+            System.out.println("에러");
+        }
+
+        System.out.println(dataMap.get("0533-앤톡5").getCompanyName());
+        System.out.println(dataMap.get("0533-앤톡5").getEnr());
+        System.out.println(dataMap.get("0533-앤톡5").getDistrictCode());
+        System.out.println("::: 종료, 시간 = " + LocalDateTime.now());
     }
 
     @Test
@@ -136,7 +210,7 @@ public class DataCompileTest {
         String crn = "111-22-3334";
         String address = "서울시 성동구 뚝섬로 1";
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             FtcResultDto dto = FtcResultDto
                     .builder()
                     .mailOrderNumber(mailOrderNumber + i)
