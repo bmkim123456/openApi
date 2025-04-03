@@ -109,7 +109,7 @@ public class DataCompileService {
                 throw new RuntimeException(e.getMessage());
             }
         }
-        log.info("enr 및 주소코드 병합 완료");
+        log.info("enr 및 주소코드 병합 완료, 기업 수 : {}", resultList.size());
         return resultList;
     }
 

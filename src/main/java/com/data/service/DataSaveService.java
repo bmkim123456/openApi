@@ -20,7 +20,7 @@ public class DataSaveService {
 
     private final ApiDataRepository apiDataRepository;
 
-    public void saveApiData(List<DataCompileDto> dataList) {
+    public String saveApiData(List<DataCompileDto> dataList) {
         List<ApiDataEntity> resultList = new ArrayList<>();
         log.info("데이터 저장 시작");
         try {
@@ -28,9 +28,10 @@ public class DataSaveService {
                 if (ObjectUtils.isEmpty(apiDataRepository.findByEnr(data.getEnr()))) {
                     resultList.add(convertDtoToEntity(data));
                 }
+                log.info("중복기업, enr : {}", data.getEnr());
             }
             apiDataRepository.saveAll(resultList);
-            log.info("데이터 저장 완료");
+            return "데이터 저장 완료, 저장된 기업 수 : " + resultList.size();
         } catch (Exception e) {
             throw new RuntimeException("저장 중 오류 발생 :" + e.getMessage());
         }

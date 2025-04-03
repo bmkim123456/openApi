@@ -28,8 +28,10 @@ public class DataController {
         List<FtcResultDto> ftcDataList = ftcDataService.ftcDataList(city, district);
         List<DataCompileDto> compileDtoList = dataCompileService.companyDataList(ftcDataList);
 
-        dataSaveService.saveApiData(compileDtoList);
-
-        return "ok";
+        try {
+            return dataSaveService.saveApiData(compileDtoList);
+        } catch (Exception e) {
+            throw new RuntimeException("데이터 저장 중 오류 발생, 사유 : " + e.getMessage());
+        }
     }
 }
