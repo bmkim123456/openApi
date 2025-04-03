@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.data.entity.ApiDataEntity.apiDataEntity;
+import static com.data.entity.ApiDataEntity.convertDtoToEntity;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +26,7 @@ public class DataSaveService {
         try {
             for (DataCompileDto data : dataList) {
                 if (ObjectUtils.isEmpty(apiDataRepository.findByEnr(data.getEnr()))) {
-                    resultList.add(apiDataEntity(data));
+                    resultList.add(convertDtoToEntity(data));
                 }
             }
             apiDataRepository.saveAll(resultList);

@@ -1,11 +1,7 @@
 package com.data.entity;
 
 import com.data.dto.DataCompileDto;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -26,7 +22,7 @@ public class ApiDataEntity {
     private String enr;
     private String districtCode;
 
-    public static ApiDataEntity apiDataEntity(DataCompileDto dto) {
+    public static ApiDataEntity convertDtoToEntity(DataCompileDto dto) {
         return ApiDataEntity.builder()
                 .mailOrderNumber(dto.getMailOrderNumber())
                 .companyName(dto.getCompanyName())
