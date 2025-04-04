@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.data.entity.ApiDataEntity.convertDtoToEntity;
 
@@ -20,20 +21,25 @@ public class DataSaveService {
 
     private final ApiDataRepository apiDataRepository;
 
-    public String saveApiData(List<DataCompileDto> dataList) {
+    public String savaApiDataTmp(Map<String, DataCompileDto> dataCompileDtoMap) {
         List<ApiDataEntity> resultList = new ArrayList<>();
         log.info("데이터 저장 시작");
         try {
-            for (DataCompileDto data : dataList) {
-                if (ObjectUtils.isEmpty(apiDataRepository.findByEnr(data.getEnr()))) {
-                    resultList.add(convertDtoToEntity(data));
+            dataCompileDtoMap.forEach((key, value) -> {
+                if (apiDataRepository.findByEnr(value.getEnr()).isPresent()) {
+                    log.info("이미 저장된 기업 입니다. enr : {}", value.getEnr());
+                    return;
                 }
-                log.info("중복기업, enr : {}", data.getEnr());
-            }
+                if (ObjectUtils.isEmpty(value.getEnr()) || ObjectUtils.isEmpty(value.getDistrictCode())) {
+                    return;
+                }
+                resultList.add(convertDtoToEntity(value));
+            });
             apiDataRepository.saveAll(resultList);
-            return "데이터 저장 완료, 저장된 기업 수 : " + resultList.size();
+            return "데이터 저장 완료. 저장된 기업 수 : " + resultList.size();
         } catch (Exception e) {
-            throw new RuntimeException("저장 중 오류 발생 :" + e.getMessage());
+            throw new RuntimeException("데이터 저장 중 오류 발생. 사유 : " + e.getMessage());
         }
     }
+
 }

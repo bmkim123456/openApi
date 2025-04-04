@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -26,10 +27,10 @@ public class DataController {
     public String request(@RequestParam String city, @RequestParam String district) {
 
         List<FtcResultDto> ftcDataList = ftcDataService.ftcDataList(city, district);
-        List<DataCompileDto> compileDtoList = dataCompileService.companyDataList(ftcDataList);
+        Map<String, DataCompileDto> dataCompileMap = dataCompileService.dataCompileDtoMap(ftcDataList);
 
         try {
-            return dataSaveService.saveApiData(compileDtoList);
+            return dataSaveService.savaApiDataTmp(dataCompileMap);
         } catch (Exception e) {
             throw new RuntimeException("데이터 저장 중 오류 발생, 사유 : " + e.getMessage());
         }

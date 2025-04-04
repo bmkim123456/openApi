@@ -16,53 +16,50 @@ import java.util.concurrent.Future;
 public class DataCompileTest {
 
     @Test
-    void blockTest() {
-        List<DataCompileDto> resultList = new ArrayList<>();
+    void blockTest() throws InterruptedException {
+        System.out.println("::: 시작, 시간 = " + LocalDateTime.now());
         List<FtcResultDto> ftcDataList = ftcDataList();
+        Map<String, DataCompileDto> dataMap = new HashMap<>();
+        Map<String, String> enrList = new HashMap<>();
+        Map<String, String> addrCodeList = new HashMap<>();
+
         for (FtcResultDto ftcData : ftcDataList) {
-            String[] enrValue = new String[1];
-            String[] addressValue = new String[1];
-            System.out.println("enr 작업 시작, 시간 : " + LocalDateTime.now());
-            if (extractEnr(ftcData.getCompanyName()).contains("N/A")) {
-                enrValue[0] = "Fail";
-                return;
-            }
-            enrValue[0] = extractEnr(ftcData.getCompanyName());
-            System.out.println("쓰레드 : " + Thread.currentThread().getId());
+            String key = ftcData.getMailOrderNumber();
 
-            System.out.println("address 작업 시작, 시간 : " + LocalDateTime.now());
-            if (extractAddr(ftcData.getAddress()).contains("N/A")) {
-                addressValue[0] = "Fail";
-                return;
-            }
-            addressValue[0] = extractAddr(ftcData.getAddress());
-            System.out.println("쓰레드 : " + Thread.currentThread().getId());
+            DataCompileDto dto = DataCompileDto
+                    .builder()
+                    .mailOrderNumber(ftcData.getMailOrderNumber())
+                    .companyName(ftcData.getCompanyName())
+                    .crn(ftcData.getCrn())
+                    .build();
 
-            try {
-                String enr = enrValue[0];
-                String addrCode = addressValue[0];
+            dataMap.put(key, dto);
 
-                if (enr.equals("Fail") || addrCode.equals("Fail")) {
-                    System.out.println("변환 실패, 기업명 : " + ftcData.getCompanyName());
-                    return;
-                }
+            String enr = extractEnr(ftcData.getCompanyName());
+            enrList.put(key, enr);
+            Thread.sleep(500);
 
-                DataCompileDto dto = DataCompileDto
-                        .builder()
-                        .mailOrderNumber(ftcData.getMailOrderNumber())
-                        .companyName(ftcData.getCompanyName())
-                        .crn(ftcData.getCrn())
-                        .enr(enr)
-                        .districtCode(addrCode)
-                        .build();
-                resultList.add(dto);
-            } catch (Exception e) {
-                System.out.println("작업 실패");
-                return;
-            }
+            String addrCoed = extractAddr(ftcData.getAddress());
+            addrCodeList.put(key, addrCoed);
+            Thread.sleep(300);
         }
-        System.out.println("기업 수 : " + resultList.size());
 
+        try {
+            for (String enrMap : enrList.keySet()) {
+                enrList.forEach((key, value) -> dataMap.get(key).setEnr(value));
+            }
+
+            for (String addrCode : addrCodeList.keySet()) {
+                addrCodeList.forEach((key, value) -> dataMap.get(key).setDistrictCode(value));
+            }
+        } catch (Exception e) {
+            System.out.println("에러");
+        }
+
+        System.out.println(dataMap.get("0533-앤톡5").getCompanyName());
+        System.out.println(dataMap.get("0533-앤톡5").getEnr());
+        System.out.println(dataMap.get("0533-앤톡5").getDistrictCode());
+        System.out.println("::: 종료, 시간 = " + LocalDateTime.now());
     }
 
     @Test
@@ -71,7 +68,7 @@ public class DataCompileTest {
         List<FtcResultDto> ftcDataList = ftcDataList();
         Map<String, DataCompileDto> dataMap = new HashMap<>();
 
-        ExecutorService extractJob = Executors.newFixedThreadPool(4);
+        ExecutorService extractJob = Executors.newFixedThreadPool(8);
 
         List<Future<Map<String, String>>> enrList = new ArrayList<>();
         List<Future<Map<String, String>>> addrCodeList = new ArrayList<>();
@@ -113,16 +110,25 @@ public class DataCompileTest {
         }
 
         try {
-            for (Future<Map<String, String>> enrMap : enrList) {
-                Map<String, String> result = enrMap.get();
-                result.forEach((key, value) -> dataMap.get(key).setEnr(value));
-            }
 
-            for (Future<Map<String, String>> future : addrCodeList) {
-                Map<String, String> result = future.get();
-                result.forEach((key, value) -> dataMap.get(key).setDistrictCode(value));
-            }
+            Future<String> setEnrJob = extractJob.submit(() -> {
+                for (Future<Map<String, String>> enrMap : enrList) {
+                    Map<String, String> result = enrMap.get();
+                    result.forEach((key, value) -> dataMap.get(key).setEnr(value));
+                }
+                return "set enr success";
+            });
 
+            Future<String> setAddrCodeJob =  extractJob.submit(() -> {
+                for (Future<Map<String, String>> future : addrCodeList) {
+                    Map<String, String> result = future.get();
+                    result.forEach((key, value) -> dataMap.get(key).setDistrictCode(value));
+                }
+                return "set addr success";
+            });
+
+            setEnrJob.get();
+            setAddrCodeJob.get();
 
         } catch (Exception e) {
             System.out.println("에러");
@@ -244,16 +250,16 @@ public class DataCompileTest {
     private String extractAddr(String address) {
         String result = "N/A";
         result = switch (address) {
-            case "서울시 성동구 뚝섬로 10" -> "1111111111";
-            case "서울시 성동구 뚝섬로 11" -> "2222222222";
-            case "서울시 성동구 뚝섬로 12" -> "3333333333";
-            case "서울시 성동구 뚝섬로 13" -> "4444444444";
-            case "서울시 성동구 뚝섬로 14" -> "5555555555";
-            case "서울시 성동구 뚝섬로 15" -> "6666666666";
-            case "서울시 성동구 뚝섬로 16" -> "7777777777";
-            case "서울시 성동구 뚝섬로 17" -> "8888888888";
-            case "서울시 성동구 뚝섬로 18" -> "9999999999";
-            case "서울시 성동구 뚝섬로 19" -> "0000000000";
+            case "서울시 성동구 뚝섬로 10" -> "앤톡0 1111111111";
+            case "서울시 성동구 뚝섬로 11" -> "앤톡1 2222222222";
+            case "서울시 성동구 뚝섬로 12" -> "앤톡2 3333333333";
+            case "서울시 성동구 뚝섬로 13" -> "앤톡3 4444444444";
+            case "서울시 성동구 뚝섬로 14" -> "앤톡4 5555555555";
+            case "서울시 성동구 뚝섬로 15" -> "앤톡5 6666666666";
+            case "서울시 성동구 뚝섬로 16" -> "앤톡6 7777777777";
+            case "서울시 성동구 뚝섬로 17" -> "앤톡7 8888888888";
+            case "서울시 성동구 뚝섬로 18" -> "앤톡8 9999999999";
+            case "서울시 성동구 뚝섬로 19" -> "앤톡9 0000000000";
             default -> result;
         };
         return result;
