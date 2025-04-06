@@ -1,8 +1,10 @@
 package com.data.util;
 
+import java.util.Optional;
+
 public interface ApiSource {
 
     String ftcResponse(String city, String district);
-    String openDataApiResponse(String csv);
-    String addressApiResponse(String address);
+    Optional<String> openDataApiResponse(String csv);
+    Optional<String> addressApiResponse(String address);
 }

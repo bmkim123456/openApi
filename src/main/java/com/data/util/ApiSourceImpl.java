@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -62,7 +63,7 @@ public class ApiSourceImpl implements ApiSource {
     }
 
     @Override
-    public String openDataApiResponse(String crn) {
+    public Optional<String> openDataApiResponse(String crn) {
         String finalCrn = crn.replace("-", "");
 
         HttpHeaders headers = new HttpHeaders();
@@ -80,22 +81,20 @@ public class ApiSourceImpl implements ApiSource {
             ResponseEntity<String> response = restTemplate.exchange(apiUrl, HttpMethod.GET, entity, String.class);
 
             if (ObjectUtils.isEmpty(response.getBody())) {
-                log.info("enr response is empty");
+                return Optional.empty();
             }
 
             if (response.getBody().contains("<crno>")) {
-                return response.getBody();
+                return Optional.of(response.getBody());
             }
-
-            log.error("사업자 번호 {} 법인번호 찾기 실패, <crno> 항목 없음", crn);
-            return null;
+            return Optional.empty();
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
     }
 
     @Override
-    public String addressApiResponse(String address) {
+    public Optional<String> addressApiResponse(String address) {
         String request = addressApiUrl + "keyword=" + address + "&confmKey=" + addressApiKey;
 
         try {
@@ -104,16 +103,14 @@ public class ApiSourceImpl implements ApiSource {
             ResponseEntity<String> response = restTemplate.postForEntity(request, headers, String.class);
 
             if (ObjectUtils.isEmpty(response.getBody())) {
-                log.error("주소 결과 없음");
-                return null;
+                return Optional.empty();
             }
 
             if (response.getBody().contains("<admCd>")) {
-                return response.getBody();
+                return Optional.of(response.getBody());
             }
 
-            log.error("주소 {} 에 대한 행정구역 코드 찾기 실패, <admCd> 항목 없음", address);
-            return null;
+            return Optional.empty();
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }

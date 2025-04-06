@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -46,28 +47,30 @@ public class ApiDataConvertTest {
 
             Future<Map<String, String>> enrFutureMap = extractJob.submit(() -> {
                 Map<String, String> enrMap = new HashMap<>();
-                String kftcResponseBody = apiSource.openDataApiResponse(ftcData.getCrn());
-                if (ObjectUtils.isEmpty(kftcResponseBody)) {
+                Optional<String> kftcResponseBody = apiSource.openDataApiResponse(ftcData.getCrn());
+                String kftcValue = kftcResponseBody.orElse(null);
+
+                if (ObjectUtils.isEmpty(kftcValue)) {
                     enrMap.put(key, null);
                     return enrMap;
                 }
                 // csv 파일에서 주소가 없는 경우 공공데이터 api를 통해 주소 값을 얻을 수도 있으므로 필요한 경우 공공데이터 주소값도 확인
                 if (ftcData.getAddress().contains("admCdN/A")) {
-                    if (extractAddr(kftcResponseBody).contains("N/A")) {
+                    if (kftcValue.contains("N/A")) {
                         System.out.println("기업명 : {} 행정동코드 확인 실패, <admCd> 값 N/A" + ftcData.getCompanyName());
                         enrMap.put(key, null);
                         return enrMap;
                     }
-                    String address = extractAddr(kftcResponseBody);
+                    String address = extractAddr(kftcValue);
                     ftcData.setAddress(convertAddrss(address));
                 }
 
-                if (extractCrno(kftcResponseBody).contains("N/A")) {
+                if (kftcValue.contains("N/A")) {
                     System.out.println("기업명 : {} 법인번호 확인 실패, <crno> 값 N/A" + ftcData.getCompanyName());
                     enrMap.put(key, null);
                     return enrMap;
                 }
-                enrMap.put(key, extractCrno(kftcResponseBody));
+                enrMap.put(key, extractCrno(kftcValue));
                 return enrMap;
             });
 
