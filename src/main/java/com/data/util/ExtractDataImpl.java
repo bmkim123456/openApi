@@ -15,6 +15,7 @@ public class ExtractDataImpl implements ExtractData {
 
     private final ApiSource apiSource;
 
+    @Override
     public Optional<String> extractEnr(String crn) {
         String enrResponse = apiSource.openDataApiResponse(crn).orElse(null);
         if (ObjectUtils.isEmpty(enrResponse)) {
@@ -32,6 +33,7 @@ public class ExtractDataImpl implements ExtractData {
         return Optional.of(crno);
     }
 
+    @Override
     public Optional<String> extractAddress(String crn) {
         String enrResponse = apiSource.openDataApiResponse(crn).orElse(null);
         if (ObjectUtils.isEmpty(enrResponse)) {
@@ -51,6 +53,7 @@ public class ExtractDataImpl implements ExtractData {
         return Optional.empty();
     }
 
+    @Override
     public Optional<String> extractDistrictCode(String address) {
         String addrValue = apiSource.addressApiResponse(address).orElse(null);
         if (ObjectUtils.isEmpty(addrValue)) {
