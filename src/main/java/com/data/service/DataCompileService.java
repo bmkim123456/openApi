@@ -8,10 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,16 +36,14 @@ public class DataCompileService {
                 Map<String, String> enrMap = new HashMap<>();
                 String enrValue = extractData.extractEnr(ftcData.getCrn()).orElse(null);
                 if (ObjectUtils.isEmpty(enrValue)) {
-                    enrMap.put(key, null);
-                    return enrMap;
+                    return Collections.emptyMap();
                 }
 
                 // csv 파일에서 주소가 없는 경우 공공데이터 api를 통해 주소 값을 얻을 수도 있으므로 필요한 경우 공공데이터 주소값도 확인
                 if (ftcData.getAddress().contains("admCdN/A")) {
                     String address = extractData.extractAddress(ftcData.getCrn()).orElse(null);
                     if (ObjectUtils.isEmpty(address)) {
-                        enrMap.put(key, null);
-                        return enrMap;
+                        return Collections.emptyMap();
                     }
                     ftcData.setAddress(convertAddrss(address));
                 }
@@ -63,11 +58,9 @@ public class DataCompileService {
                 }
                 String districtCode = extractData.extractDistrictCode(ftcData.getAddress()).orElse(null);
                 if (ObjectUtils.isEmpty(districtCode)) {
-                    addrMap.put(key, null);
-                    return addrMap;
+                    return Collections.emptyMap();
                 }
-                addrMap.put(key, districtCode);
-                return addrMap;
+                return Collections.emptyMap();
             });
 
             enrList.add(enrFutureMap);

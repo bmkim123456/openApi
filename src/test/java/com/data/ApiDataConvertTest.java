@@ -11,10 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -32,7 +29,7 @@ public class ApiDataConvertTest {
     @Test
     void compileDataTest() {
         System.out.println("작업 시작, 시간 : " + LocalDateTime.now());
-        List<FtcResultDto> ftcDataList = ftcDataService.ftcDataList("인천광역시", "옹진군");
+        List<FtcResultDto> ftcDataList = ftcDataService.ftcDataList("서울특별시", "노원구");
 
         ExecutorService extractJob = Executors.newFixedThreadPool(8);
 
@@ -47,16 +44,14 @@ public class ApiDataConvertTest {
                 Map<String, String> enrMap = new HashMap<>();
                 String enrValue = extractData.extractEnr(ftcData.getCrn()).orElse(null);
                 if (ObjectUtils.isEmpty(enrValue)) {
-                    enrMap.put(key, null);
-                    return enrMap;
+                    return Collections.emptyMap();
                 }
 
                 // csv 파일에서 주소가 없는 경우 공공데이터 api를 통해 주소 값을 얻을 수도 있으므로 필요한 경우 공공데이터 주소값도 확인
                 if (ftcData.getAddress().contains("admCdN/A")) {
                     String addressValue = extractData.extractAddress(ftcData.getCrn()).orElse(null);
                     if (ObjectUtils.isEmpty(addressValue)) {
-                        enrMap.put(key, null);
-                        return enrMap;
+                        return Collections.emptyMap();
                     }
                     ftcData.setAddress(convertAddrss(addressValue));
                 }
@@ -109,17 +104,25 @@ public class ApiDataConvertTest {
             System.out.println("에러 : " + e.getMessage());
         }
 
+        List<DataCompileDto> resultList = new ArrayList<>();
+
         dataCompileMap.forEach((key, value) -> {
             if (value.getEnr() == null || value.getDistrictCode() == null) {
                 return;
             }
 
-            System.out.println(key);
-            System.out.println(value.getMailOrderNumber());
-            System.out.println(value.getCompanyName());
-            System.out.println(value.getEnr());
-            System.out.println(value.getDistrictCode());
+            DataCompileDto dto = DataCompileDto
+                    .builder()
+                    .mailOrderNumber(value.getMailOrderNumber())
+                    .companyName(value.getCompanyName())
+                    .crn(value.getCrn())
+                    .enr(value.getEnr())
+                    .districtCode(value.getDistrictCode())
+                    .build();
+            resultList.add(dto);
         });
+
+        System.out.println("취합 된 데이터 수 : " + resultList.size());
         System.out.println("작업 종료, 시간 : " + LocalDateTime.now());
     }
 

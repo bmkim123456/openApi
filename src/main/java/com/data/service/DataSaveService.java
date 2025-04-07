@@ -24,16 +24,15 @@ public class DataSaveService {
 
     public String savaApiDataTmp(Map<String, DataCompileDto> dataCompileDtoMap) {
         List<ApiDataEntity> resultList = new ArrayList<>();
-        Map<String, DataCompileDto> dataCompileMap = compileDataResultMap(dataCompileDtoMap);
-        log.info("데이터 저장 시작");
+        List<DataCompileDto> compileDataList = compileDataList(dataCompileDtoMap);
         try {
-            dataCompileMap.forEach((key, value) -> {
-                if (apiDataRepository.findByEnr(value.getEnr()).isPresent()) {
-                    log.info("이미 저장된 기업 입니다. enr : {}", value.getEnr());
-                    return;
+            for (DataCompileDto dataCompileDto : compileDataList) {
+                if (apiDataRepository.findByEnr(dataCompileDto.getEnr()).isPresent()) {
+                    log.info("이미 저장된 기업 입니다. enr : {}", dataCompileDto.getEnr());
+                    continue;
                 }
-                resultList.add(convertDtoToEntity(value));
-            });
+                resultList.add(convertDtoToEntity(dataCompileDto));
+            }
             apiDataRepository.saveAll(resultList);
             return "데이터 저장 완료. 저장된 기업 수 : " + resultList.size();
         } catch (Exception e) {
@@ -41,16 +40,26 @@ public class DataSaveService {
         }
     }
 
-    private Map<String, DataCompileDto> compileDataResultMap(Map<String, DataCompileDto> dataCompileDtoMap) {
-        Map<String, DataCompileDto> resultMap = new HashMap<>();
+    private List<DataCompileDto> compileDataList(Map<String, DataCompileDto> dataCompileDtoMap) {
+        List<DataCompileDto> resultList = new ArrayList<>();
         try {
             dataCompileDtoMap.forEach((key, value) -> {
                 if (ObjectUtils.isEmpty(value.getEnr()) || ObjectUtils.isEmpty(value.getDistrictCode())) {
                     return;
                 }
-                resultMap.put(key, value);
+
+                DataCompileDto compileDto = DataCompileDto
+                        .builder()
+                        .mailOrderNumber(value.getMailOrderNumber())
+                        .companyName(value.getCompanyName())
+                        .crn(value.getCrn())
+                        .enr(value.getEnr())
+                        .districtCode(value.getDistrictCode())
+                        .build();
+                resultList.add(compileDto);
             });
-            return resultMap;
+
+            return resultList;
         } catch (Exception e) {
             throw new RuntimeException("최종 데이터 취합 실패, 사유 : " + e.getMessage());
         }
