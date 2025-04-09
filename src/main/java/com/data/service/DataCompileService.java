@@ -60,8 +60,10 @@ public class DataCompileService {
                 if (ObjectUtils.isEmpty(districtCode)) {
                     return Collections.emptyMap();
                 }
-                return Collections.emptyMap();
+                return addrMap;
             });
+
+            addrCodeFutureMap.isDone();
 
             enrList.add(enrFutureMap);
             addrCodeList.add(addrCodeFutureMap);

@@ -7,10 +7,12 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.Optional;
 
 @Slf4j
@@ -43,20 +45,21 @@ public class ApiSourceImpl implements ApiSource {
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
             RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<byte[]> response = restTemplate
-                    .exchange(requestUrl, HttpMethod.GET, entity, byte[].class);
+            restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("EUC-KR")));
+            String response = restTemplate
+                    .exchange(requestUrl, HttpMethod.GET, entity, String.class)
+                    .getBody();
 
-            byte[] responseBody = response.getBody();
-            if (ObjectUtils.isEmpty(responseBody)) {
+            if (ObjectUtils.isEmpty(response)) {
                 throw new RuntimeException("데이터가 없습니다");
             }
 
-            if (new String(responseBody).contains("<title>오류")) {
+            if (response.contains("<title>오류")) {
                 log.error("전달할 파일이 없습니다. 시/도, 군/구 입력이 정확한지 확인 해주세요");
                 throw new RuntimeException("지역 이름이 정확하지 않습니다.");
             }
 
-            return new String(responseBody, "EUC-KR");
+            return response;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }

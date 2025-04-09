@@ -7,8 +7,11 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,10 +82,16 @@ public class FtcCsvFileCheckTest {
         }
     }
 
+    @Test
+    void textTest() {
+        String result = getMailOrderSaleData();
+        System.out.println(result);
+    }
+
     private String getMailOrderSaleData() {
         try {
-            String city = "서울특별시";
-            String district = "강남구";
+            String city = "인천광역시";
+            String district = "옹진군";
             String url = "통신판매사업자_" + city + "_" + district + ".csv";
 
             String download = "https://www.ftc.go.kr/www/downloadBizComm.do?atchFileUrl=dataopen&atchFileNm=" + url;
@@ -93,23 +102,20 @@ public class FtcCsvFileCheckTest {
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
             RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<byte[]> response = restTemplate.exchange(
-                    download,
-                    HttpMethod.GET,
-                    entity,
-                    byte[].class
-            );
+            restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("EUC-KR")));
+            String response = restTemplate
+                    .exchange(download, HttpMethod.GET, entity, String.class)
+                    .getBody();
 
-            byte[] responseBody = response.getBody();
-            if (ObjectUtils.isEmpty(responseBody)) {
+            if (ObjectUtils.isEmpty(response)) {
                 throw new RuntimeException("데이터가 없습니다");
             }
 
-            if (new String(responseBody).contains("<title>오류")) {
+            if (response.contains("<title>오류")) {
                 System.out.println("전달할 파일 없음");
             }
 
-            return new String(responseBody, "EUC-KR");
+            return response;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
